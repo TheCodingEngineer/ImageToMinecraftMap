@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>me.letscode.minecraft.tools</groupId>
+    <artifactId>image-minecraft-map-converter</artifactId>
+    <name>ImageToMinecraftMapConverter</name>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <build>
+        <finalName>ImageToMinecraftMapConverter-${project.version}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                <artifactId>launch4j-maven-plugin</artifactId>
+                <version>2.3.2</version>
+                <executions>
+                    <execution>
+                        <id>l4j-gui</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>launch4j</goal>
+                        </goals>
+                        <configuration>
+                            <headerType>gui</headerType>
+                            <outfile>target/ImageToMinecraftMapConverter.exe</outfile>
+                            <jar>target/${project.build.finalName}.jar</jar>
+                            <errTitle>ImageToMinecraftMapConverter</errTitle>
+                            <icon>launch4j/app.ico</icon>
+                            <stayAlive>true</stayAlive>
+                            <classPath>
+                                <mainClass>me.letscode.map.converter.gui.MainGuiConverter</mainClass>
+                            </classPath>
+                            <jre>
+                                <path>%JAVA_HOME%;%PATH%</path>
+                                <minVersion>11</minVersion>
+                            </jre>
+                            <versionInfo>
+                                <fileVersion>1.0.0.1</fileVersion>
+                                <txtFileVersion>1.0.0.1</txtFileVersion>
+                                <fileDescription>Image To Minecraft Map Converter</fileDescription>
+                                <copyright>(c) 2023 LetsCode</copyright>
+                                <productVersion>1.0.0.1</productVersion>
+                                <txtProductVersion>1.0.0.1</txtProductVersion>
+                                <productName>Image To Minecraft Map Converter</productName>
+                                <internalName>ImageToMinecraftMapConverter</internalName>
+                                <originalFilename>ImageToMinecraftMapConverter.exe</originalFilename>
+                            </versionInfo>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+    </build>
+    
+</project>
