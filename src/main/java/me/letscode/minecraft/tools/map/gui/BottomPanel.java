@@ -1,12 +1,9 @@
-package me.letscode.map.converter.gui;
+package me.letscode.minecraft.tools.map.gui;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.io.File;
-
-import javax.swing.JLabel;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.io.File;
 
 public class BottomPanel extends JPanel {
 
@@ -24,9 +21,11 @@ public class BottomPanel extends JPanel {
         this.parent = parent;
 
         this.coordsLabel = new JLabel("X: 0 Y: 0");
+        this.coordsLabel.setForeground(Color.BLACK);
         this.coordsLabel.setBorder(new EmptyBorder(5, 10, 5, 10));
 
         this.selectedFileLabel = new JLabel();
+        this.selectedFileLabel.setForeground(Color.BLACK);
         this.selectedFileLabel.setBorder(new EmptyBorder(5, 10, 5, 10));
 
         setLayout(new BorderLayout());

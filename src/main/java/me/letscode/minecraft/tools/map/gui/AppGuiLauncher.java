@@ -1,9 +1,9 @@
-package me.letscode.map.converter.gui;
+package me.letscode.minecraft.tools.map.gui;
 
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
-public class MainGuiConverter {
-	
+public class AppGuiLauncher {
+
 	public static void main(String[] args) {
 		GuiConverter converter = new GuiConverter();
 		

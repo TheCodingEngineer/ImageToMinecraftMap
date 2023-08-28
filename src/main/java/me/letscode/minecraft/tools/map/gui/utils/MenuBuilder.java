@@ -1,15 +1,10 @@
-package me.letscode.map.converter.gui.utils;
+package me.letscode.minecraft.tools.map.gui.utils;
 
+import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Objects;
 import java.util.ResourceBundle;
-
-import javax.swing.Icon;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.KeyStroke;
 
 public class MenuBuilder implements ActionListener, MenuHandler {
 

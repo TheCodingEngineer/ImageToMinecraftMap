@@ -1,12 +1,11 @@
-package me.letscode.map.converter.gui.utils;
+package me.letscode.minecraft.tools.map.gui.utils;
 
-import java.awt.Component;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Objects;
 import java.util.ResourceBundle;
-
-import javax.swing.*;
 
 public class MenuPopupBuilder implements ActionListener, MenuHandler {
 

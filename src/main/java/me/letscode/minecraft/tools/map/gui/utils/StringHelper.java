@@ -1,4 +1,4 @@
-package me.letscode.map.converter.gui.utils;
+package me.letscode.minecraft.tools.map.gui.utils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

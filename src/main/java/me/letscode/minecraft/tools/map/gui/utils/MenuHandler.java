@@ -1,6 +1,6 @@
-package me.letscode.map.converter.gui.utils;
+package me.letscode.minecraft.tools.map.gui.utils;
 
-import javax.swing.JMenuItem;
+import javax.swing.*;
 
 public interface MenuHandler {
 

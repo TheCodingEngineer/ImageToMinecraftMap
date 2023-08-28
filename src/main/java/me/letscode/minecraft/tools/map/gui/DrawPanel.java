@@ -1,19 +1,17 @@
-package me.letscode.map.converter.gui;
+package me.letscode.minecraft.tools.map.gui;
 
+import me.letscode.minecraft.tools.map.gui.utils.Coordinates;
+import me.letscode.minecraft.tools.map.gui.utils.MenuBuilder;
+import me.letscode.minecraft.tools.map.gui.utils.MenuPopupBuilder;
+
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferedImage;
-
 import java.util.Objects;
 import java.util.ResourceBundle;
-
-import javax.swing.*;
-
-import me.letscode.map.converter.gui.utils.Coordinates;
-import me.letscode.map.converter.gui.utils.MenuBuilder;
-import me.letscode.map.converter.gui.utils.MenuPopupBuilder;
 
 public class DrawPanel extends JPanel {
 

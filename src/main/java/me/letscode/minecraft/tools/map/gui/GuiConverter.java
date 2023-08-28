@@ -1,7 +1,14 @@
-package me.letscode.map.converter.gui;
+package me.letscode.minecraft.tools.map.gui;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
+import me.letscode.minecraft.tools.map.gui.utils.*;
+import me.letscode.minecraft.tools.map.io.ImageMapConverter;
+import me.letscode.minecraft.tools.map.io.Resources;
+import me.letscode.minecraft.tools.map.palette.MapColorPalette;
+
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
@@ -15,20 +22,6 @@ import java.util.Locale;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.KeyStroke;
-import javax.swing.UIManager;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
-import me.letscode.map.converter.ImageMapConverter;
-import me.letscode.map.converter.gui.utils.*;
-
 public class GuiConverter extends JFrame {
 
     /**
@@ -36,8 +29,6 @@ public class GuiConverter extends JFrame {
      */
     private static final long serialVersionUID = 4337891990937899770L;
 
-    private static final String LANG_RESOURCE = "/lang/%s_%s.properties";
-    private static final String ICON_RESOURCE = "/icons/%s";
 
     static {
         System.setProperty("java.util.PropertyResourceBundle.encoding", "ISO-8859-1");
@@ -75,7 +66,7 @@ public class GuiConverter extends JFrame {
         setTitle(this.language.getString("title"));
 
         setLayout(new BorderLayout());
-        setIconImage(getResourceIcon("appicon.png").getImage());
+        setIconImage(Resources.getIconResource("appicon.png").getImage());
 
         addComponents();
 
@@ -91,7 +82,12 @@ public class GuiConverter extends JFrame {
 
         });
 
-        this.currentDirectory = new File(System.getenv("userprofile"));
+        String home = System.getenv("HOME"); // Linux, MacOS (Darwin)
+        if (home == null) {
+            home = System.getenv("userprofile"); // Windows
+        }
+
+        this.currentDirectory = new File(home);
         if (!this.currentDirectory.exists() || this.currentDirectory.isFile()) {
             this.currentDirectory = new File(System.getProperty("user.dir"));
         }
@@ -102,9 +98,9 @@ public class GuiConverter extends JFrame {
     private ResourceBundle loadLanguageBundle() throws IOException {
         Locale locale = Locale.getDefault();
 
-        InputStream inputStream = this.getLanguageFile("lang", locale);
+        InputStream inputStream = Resources.getLanguageResourceFile("lang", locale);
         if (inputStream == null) {
-            inputStream = this.getLanguageFile("lang", Locale.ENGLISH);
+            inputStream = Resources.getLanguageResourceFile("lang", Locale.ENGLISH);
             if (inputStream == null) {
                 throw new FileNotFoundException("Unable to find default english language file");
             }
@@ -235,9 +231,12 @@ public class GuiConverter extends JFrame {
                                 long start = System.currentTimeMillis();
                                 BufferedImage[] slices = this.getDrawPanel().sliceImages();
 
+                                MapColorPalette[] palettes = Resources.getColorPalettes();
+                                var palette = palettes[palettes.length - 1];
+
                                 for (BufferedImage slice : slices) {
                                     File output = new File(directory, String.format("map_%d.dat", id++));
-                                    (new ImageMapConverter(slice, output)).convert();
+                                    (new ImageMapConverter(slice, output, palette, palette.getVersions().getFrom())).convert();
                                     parts++;
                                 }
 
@@ -250,6 +249,7 @@ public class GuiConverter extends JFrame {
                             } catch (RuntimeException e) {
                                 showMessageDialog("export.error.message.bounds", "export.error.title",
                                         JOptionPane.ERROR_MESSAGE);
+                                e.printStackTrace();
                             } catch (IOException e) {
                                 showMessageDialog("export.error.message.io", "export.error.title",
                                         JOptionPane.ERROR_MESSAGE, e.getLocalizedMessage());
@@ -286,9 +286,9 @@ public class GuiConverter extends JFrame {
                 }
             }
         })
-		.addMenuItem("menu.edit.undo", "undo", getResourceIcon("undo16.png"),
+		.addMenuItem("menu.edit.undo", "undo", Resources.getIconResource("undo16.png"),
 				KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK))
-		.addMenuItem("menu.edit.redo", "redo", getResourceIcon("redo16.png"),
+		.addMenuItem("menu.edit.redo", "redo", Resources.getIconResource("redo16.png"),
 				KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK));
 
         addMenu(menuBar, builder);
@@ -296,14 +296,6 @@ public class GuiConverter extends JFrame {
 
         add(bottomPanel = new BottomPanel(this), BorderLayout.SOUTH);
         add(drawPanel = new DrawPanel(this), BorderLayout.CENTER);
-    }
-
-    private ImageIcon getResourceIcon(String name) {
-        return new ImageIcon(this.getClass().getResource(String.format(ICON_RESOURCE, name)));
-    }
-
-    private InputStream getLanguageFile(String key, Locale locale) {
-        return this.getClass().getResourceAsStream(String.format(LANG_RESOURCE, key, locale.getLanguage()));
     }
 
     private void showMessageDialog(String messageKey, String titleKey, int type, Object...formats) {
