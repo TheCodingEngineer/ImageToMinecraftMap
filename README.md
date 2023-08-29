@@ -9,7 +9,7 @@ Data version: `2724 (1.17)`
 ## Launch4j
 This tool uses `Launch4j` to pack the application into a self executable binary (for example .exe files for Windows).
 
-[Website](http://launch4j.sourceforge.net/) 
+[Website](http://launch4j.sourceforge.net/)
 
 ## TODO
 
@@ -19,7 +19,7 @@ This tool uses `Launch4j` to pack the application into a self executable binary 
 - [ ] Implement action history (undo, redo)
 
 
-## License 
+## License
 
-This project is licensed under the [General Public License Version](https://www.gnu.org/licenses/gpl-3.0.en.html) (GPLv3).
+This project is licensed under the [General Public License V3](https://www.gnu.org/licenses/gpl-3.0.en.html) (GPLv3).
 See file [LICENSE](/LICENSE).
