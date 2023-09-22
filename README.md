@@ -1,6 +1,8 @@
 # ImageToMinecraftMap
 This utility program allows you to convert images easily (PNG, JPEG) to minecraft maps.
 
+![Gui Overview](docs/gui_overview.png)
+
 ## Color palette
 
 Supported color palette: `1.17+` \
