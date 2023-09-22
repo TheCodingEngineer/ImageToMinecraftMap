@@ -10,7 +10,8 @@ public class ColorMatcherAlgorithms {
         double minDelta = 0;
 
         int[] lab1 = rgb2lab(pixel);
-        for (int i = 0; i < paletteColors.length; i++) {
+        // first four colors are transparent
+        for (int i = 4; i < paletteColors.length; i++) {
             int[] lab2 = rgb2lab(paletteColors[i]);
 
             float dL = lab2[0] - lab1[0];
@@ -21,6 +22,27 @@ public class ColorMatcherAlgorithms {
             if (index == 0 || deltaE < minDelta) {
                 index = i;
                 minDelta = deltaE;
+            }
+        }
+
+        return index;
+    }
+
+    public static int findMostSimilarColorChannel(Color pixel, Color[] paletteColors)
+    {
+        int index = 0;
+        double minDelta = 0;
+
+        // first four colors are transparent
+        for (int i = 4; i < paletteColors.length; i++) {
+            float dR = pixel.getRed() - paletteColors[i].getRed();
+            float dG = pixel.getGreen() - paletteColors[i].getGreen();
+            float dB = pixel.getBlue() - paletteColors[i].getBlue();
+            double delta = Math.sqrt((dR * dR) + (dG * dG) + (dB * dB));
+
+            if (index == 0 || delta < minDelta) {
+                index = i;
+                minDelta = delta;
             }
         }
 

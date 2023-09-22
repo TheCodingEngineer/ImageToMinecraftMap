@@ -104,7 +104,7 @@ public class ImageMapConverter {
                     int rgb = image.getRGB(x, z);
                     Color pixel = new Color(rgb);
 
-                    array[index] = (byte) ColorMatcherAlgorithms.findMostSimilarColor(pixel, colors);
+                    array[index] = (byte) ColorMatcherAlgorithms.findMostSimilarColorChannel(pixel, colors);
                 } else {
                     array[index] = 0;
                 }
