@@ -20,18 +20,29 @@ public class DrawPanel extends JPanel {
      */
     private static final long serialVersionUID = -2849933354357685029L;
 
-    private static final int DEFAULT_WIDTH = 128;
-    private static final int DEFAULT_HEIGHT = 128;
+    private static final int GRID_WIDTH = 128;
+    private static final int GRID_HEIGHT = 128;
 
-    private GuiConverter parent;
+    private final GuiConverter parent;
 
-    private Color defaultBackgroundPanelColor = new Color(240, 240, 240);
+    private final Color defaultBackgroundPanelColor = new Color(240, 240, 240);
     private Color defaultBackgroundColor = Color.WHITE;
 
     private int mouseX, mouseY;
+
+
+    private int dragOriginX, dragOriginY;
+
+    private boolean draggable;
+
+    private int offsetX, offsetY;
     private double scale = 1.0;
 
-    private BufferedImage image;
+    private int canvasCols;
+
+    private int canvasRows;
+
+    private BufferedImage displayImage;
 
     private MenuPopupBuilder panelPopupMenu;
     private ResourceBundle language;
@@ -42,11 +53,16 @@ public class DrawPanel extends JPanel {
         this.parent = parent;
         this.language = parent.getLanguage();
 
+        this.setBounds(1, 1);
+        this.initialize();
+    }
+
+    private void initialize() {
         initPopupMenu();
 
         addMouseWheelListener(event -> {
             if (event.getUnitsToScroll() > 0) {
-                scale = Math.max(0.5, scale - 0.05);
+                scale = Math.max(0.2, scale - 0.05);
             } else {
                 scale = Math.min(2.0, scale + 0.05);
             }
@@ -55,6 +71,16 @@ public class DrawPanel extends JPanel {
         });
 
         addMouseMotionListener(new MouseMotionAdapter() {
+
+            @Override
+            public void mouseDragged(MouseEvent event) {
+                if (draggable) {
+                    offsetX = dragOriginX - event.getX();
+                    offsetY = dragOriginY - event.getY();
+
+                    repaint();
+                }
+            }
 
             @Override
             public void mouseMoved(MouseEvent event) {
@@ -69,6 +95,22 @@ public class DrawPanel extends JPanel {
         addMouseListener(new MouseAdapter() {
 
             @Override
+            public void mousePressed(MouseEvent event) {
+                if (event.getButton() == MouseEvent.BUTTON1) {
+                    draggable = true;
+                    dragOriginX = event.getX() + offsetX;
+                    dragOriginY = event.getY() + offsetY;
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent event) {
+                if (event.getButton() == MouseEvent.BUTTON1) {
+                    draggable = false;
+                }
+            }
+
+            @Override
             public void mouseClicked(MouseEvent e) {
                 int mouseX = e.getX();
                 int mouseY = e.getY();
@@ -76,12 +118,16 @@ public class DrawPanel extends JPanel {
         });
     }
 
-
     public Coordinates getTopLeftCorner() {
         int x = (this.getWidth() / 2 - (int) (this.getCanvasWidth() / 2.0 * this.scale));
         int y = (this.getHeight() / 2 - (int) (this.getCanvasHeight() / 2.0 * this.scale));
 
         return new Coordinates(x, y);
+    }
+
+    public void setBounds(int canvasCols, int canvasRows)  {
+        this.canvasCols = canvasCols;
+        this.canvasRows = canvasRows;
     }
 
     private void initPopupMenu() {
@@ -130,25 +176,38 @@ public class DrawPanel extends JPanel {
     public void displayImage(BufferedImage image) {
         Objects.requireNonNull(image);
 
+        int rows = (int) Math.ceil((double) image.getHeight() / GRID_HEIGHT);
+        int cols = (int) Math.ceil((double) image.getWidth() / GRID_HEIGHT);
+
+        this.setBounds(cols, rows);
+
         this.scale = 1.0;
-        this.image = image;
+        this.displayImage = image;
         this.repaint();
+        this.updateLabel();
     }
 
     public void removeImage() {
-        this.image = null;
+        this.displayImage = null;
         this.parent.getBottomPanel().setSelectedImageFile(null);
 
+        this.setBounds(1, 1);
+        this.offsetY = 0;
+        this.offsetX = 0;
+        this.draggable = false;
+        this.scale = 1.0;
+
         this.repaint();
+        this.updateLabel();
     }
 
 
     private void updateLabel() {
         Coordinates coordinates = getTopLeftCorner();
-        int xRect = (int) ((mouseX - coordinates.getX()) * 1.0 / scale);
-        int yRect = (int) ((mouseY - coordinates.getY()) * 1.0 / scale);
+        int xRect = (int) ((mouseX + offsetX - coordinates.getX()) * 1.0 / scale);
+        int yRect = (int) ((mouseY + offsetY - coordinates.getY()) * 1.0 / scale);
 
-        parent.getBottomPanel().updateLabel(xRect, yRect);
+        parent.getBottomPanel().updateLabel(xRect, yRect, canvasCols, canvasRows, getCanvasWidth(), getCanvasHeight());
     }
 
     @Override
@@ -159,18 +218,29 @@ public class DrawPanel extends JPanel {
         clearRect(gr2d);
 
         // setup canvas
-        goToCenter(gr2d);
+        goToOrigin(gr2d);
         scaleCanvas(gr2d);
 
         // draw image
         goToTopLeftCanvasCoords(gr2d);
         fillCanvasBackground(gr2d);
-        if (this.image != null) {
+        if (this.displayImage != null) {
             drawDisplayImage(gr2d);
-            if (this.showGrid) {
-                drawGrid(gr2d);
-            }
         }
+        if (this.showGrid) {
+            drawGrid(gr2d);
+        }
+    }
+
+    private BufferedImage paintImage() {
+        BufferedImage image = new BufferedImage(getCanvasWidth(), getCanvasHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D gr2d = (Graphics2D) image.getGraphics();
+
+        fillCanvasBackground(gr2d);
+        if (this.displayImage != null) {
+            drawDisplayImage(gr2d);
+        }
+        return image;
     }
 
     private void drawGrid(Graphics2D gr2d) {
@@ -179,28 +249,22 @@ public class DrawPanel extends JPanel {
         gr2d.setStroke(new BasicStroke(0.0F, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER, 1f,
                 dashingPattern, 0.75f));
 
-        for (int x = DEFAULT_WIDTH; x < this.getCanvasWidth(); x += DEFAULT_WIDTH) {
+        for (int x = GRID_WIDTH; x < this.getCanvasWidth(); x += GRID_WIDTH) {
             gr2d.drawLine(x, -10, x, this.getCanvasHeight() + 10);
         }
 
-        for (int y = DEFAULT_HEIGHT; y < this.getCanvasHeight(); y += DEFAULT_HEIGHT) {
+        for (int y = GRID_HEIGHT; y < this.getCanvasHeight(); y += GRID_HEIGHT) {
             gr2d.drawLine(-10, y, this.getCanvasWidth() + 10, y);
         }
     }
 
 
     private int getCanvasHeight() {
-        if (this.image == null) {
-            return DEFAULT_HEIGHT;
-        }
-        return this.image.getHeight();
+        return this.canvasRows * GRID_HEIGHT;
     }
 
     private int getCanvasWidth() {
-        if (this.image == null) {
-            return DEFAULT_WIDTH;
-        }
-        return this.image.getWidth();
+        return this.canvasCols * GRID_WIDTH;
     }
 
     private void goToTopLeftCanvasCoords(Graphics2D gr2d) {
@@ -208,6 +272,7 @@ public class DrawPanel extends JPanel {
     }
 
     private void fillCanvasBackground(Graphics2D gr2d) {
+        gr2d.setColor(defaultBackgroundColor);
         gr2d.fillRect(0, 0, this.getCanvasWidth(), this.getCanvasHeight());
     }
 
@@ -219,39 +284,41 @@ public class DrawPanel extends JPanel {
         gr2d.translate(this.getWidth() / 2, this.getHeight() / 2);
     }
 
+    private void goToOrigin(Graphics2D gr2d) {
+        gr2d.translate(this.getWidth() / 2 - this.offsetX, this.getHeight() / 2 - this.offsetY);
+    }
+
     private void clearRect(Graphics2D gr2d) {
         gr2d.setColor(defaultBackgroundPanelColor);
         gr2d.fillRect(0, 0, getWidth(), getHeight());
-        gr2d.setColor(defaultBackgroundColor);
     }
 
     private void drawDisplayImage(Graphics2D gr2d) {
-        gr2d.drawImage(this.image, 0, 0, this.defaultBackgroundColor, null);
-    }
+        int offsetX = (this.getCanvasWidth() - this.displayImage.getWidth()) / 2;
+        int offsetY = (this.getCanvasHeight() - this.displayImage.getHeight()) / 2;
 
-    public BufferedImage getImage() {
-        return this.image;
+        gr2d.drawImage(this.displayImage, offsetX, offsetY, this.defaultBackgroundColor, null);
     }
 
     public BufferedImage[] sliceImages() {
-        Objects.requireNonNull(this.image);
+        BufferedImage image = this.paintImage();
 
-        if (this.image.getHeight() % 128 != 0) {
-            throw new RuntimeException("Invalid image height; expected a multiple of 128");
+        if (image.getHeight() % GRID_HEIGHT != 0) {
+            throw new IllegalArgumentException("Invalid image height; expected a multiple of " + GRID_HEIGHT);
         }
 
-        if (this.image.getWidth() % 128 != 0) {
-            throw new RuntimeException("Invalid image width; expected a multiple of 128");
+        if (image.getWidth() % GRID_WIDTH != 0) {
+            throw new IllegalArgumentException("Invalid image width; expected a multiple of " + GRID_WIDTH);
         }
 
-        int sliceX = this.image.getWidth() / 128;
-        int sliceY = this.image.getHeight() / 128;
+        int sliceX = image.getWidth() / GRID_WIDTH;
+        int sliceY = image.getHeight() / GRID_HEIGHT;
         int index = 0;
 
         BufferedImage[] slices = new BufferedImage[sliceX * sliceY];
         for (int x = 0; x < sliceX; x++) {
             for (int y = 0; y < sliceY; y++) {
-                slices[index++] = this.image.getSubimage(x * 128, y * 128, 128, 128);
+                slices[index++] = image.getSubimage(x * GRID_WIDTH, y * GRID_HEIGHT, GRID_WIDTH, GRID_HEIGHT);
             }
         }
         return slices;

@@ -37,11 +37,11 @@ public class ImageMapConverter {
 
     public void convert() throws IOException {
         if (this.image.getWidth() < 128) {
-            throw new IOException("Image width too small (< 128)");
+            throw new IllegalArgumentException("Image width too small (< 128)");
         }
 
         if (this.image.getHeight() < 128) {
-            throw new IOException("Image height too small (< 128)");
+            throw new IllegalArgumentException("Image height too small (< 128)");
         }
 
         NBTOutputStream out = new NBTOutputStream(new FileOutputStream(this.outputFile), true);

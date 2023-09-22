@@ -14,6 +14,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -21,8 +23,9 @@ import java.io.InputStream;
 import java.util.Locale;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
+import java.util.concurrent.ExecutionException;
 
-public class GuiConverter extends JFrame {
+public class GuiConverter extends JFrame implements PropertyChangeListener {
 
     /**
      *
@@ -202,7 +205,8 @@ public class GuiConverter extends JFrame {
                                 }
                                 showMessageDialog("export.images.done.message",
                                         "export.images.done.title", JOptionPane.INFORMATION_MESSAGE, id);
-                            } catch (RuntimeException e) {
+                            } catch (IllegalArgumentException e) {
+                                e.printStackTrace();
                                 showMessageDialog("export.error.message.bounds", "export.error.title",
                                         JOptionPane.ERROR_MESSAGE);
                             } catch (IOException e) {
@@ -226,30 +230,19 @@ public class GuiConverter extends JFrame {
 
                                 String input = showInputDialog("export.input.id", 1);
                                 int id = Integer.parseInt(input);
-                                int parts = 0;
 
-                                long start = System.currentTimeMillis();
                                 BufferedImage[] slices = this.getDrawPanel().sliceImages();
 
                                 MapColorPalette[] palettes = Resources.getColorPalettes();
                                 var palette = palettes[palettes.length - 1];
 
-                                for (BufferedImage slice : slices) {
-                                    File output = new File(directory, String.format("map_%d.dat", id++));
-                                    (new ImageMapConverter(slice, output, palette, palette.getVersions().getFrom())).convert();
-                                    parts++;
-                                }
-
-                                long diff = System.currentTimeMillis() - start;
-                                showMessageDialog("export.maps.done.message",
-                                        "export.maps.done.title", JOptionPane.INFORMATION_MESSAGE, parts, diff);
+                                startExportTask(directory, id, palette, slices);
                             } catch (NumberFormatException e) {
                                 showMessageDialog("export.error.message.number", "export.error.title",
                                         JOptionPane.ERROR_MESSAGE);
-                            } catch (RuntimeException e) {
+                            } catch (IllegalArgumentException e) {
                                 showMessageDialog("export.error.message.bounds", "export.error.title",
                                         JOptionPane.ERROR_MESSAGE);
-                                e.printStackTrace();
                             } catch (IOException e) {
                                 showMessageDialog("export.error.message.io", "export.error.title",
                                         JOptionPane.ERROR_MESSAGE, e.getLocalizedMessage());
@@ -296,6 +289,63 @@ public class GuiConverter extends JFrame {
 
         add(bottomPanel = new BottomPanel(this), BorderLayout.SOUTH);
         add(drawPanel = new DrawPanel(this), BorderLayout.CENTER);
+    }
+
+    private ProgressMonitor taskMonitor;
+
+    private ExportWorker exportTask;
+
+
+    private boolean taskEnded = false;
+
+    private void startExportTask(File directory, int id, MapColorPalette palette, BufferedImage[] slices) {
+        if (exportTask != null && !exportTask.isDone()) {
+            return;
+        }
+        taskEnded = false;
+        taskMonitor = new ProgressMonitor(this,  language.getString("export.maps.progress.title"),
+                "", 0, slices.length);
+
+        exportTask = new ExportWorker(this, directory, id, palette, slices);
+        exportTask.addPropertyChangeListener(this);
+        exportTask.execute();
+    }
+
+
+    private void endExportTask()  {
+        if (exportTask.isCancelled()) {
+            showMessageDialog("export.error.message.cancelled", "export.error.title",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            try {
+                double time = exportTask.get() / 1000.0;
+                showMessageDialog("export.maps.done.message",
+                        "export.maps.done.title", JOptionPane.INFORMATION_MESSAGE, exportTask.getSlices().length, time);
+            } catch (Exception e) {
+                showMessageDialog("export.error.message.generic", "export.error.title",
+                        JOptionPane.ERROR_MESSAGE, e.getLocalizedMessage());
+            }
+        }
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent event) {
+        if ("progress".equalsIgnoreCase(event.getPropertyName()) && taskMonitor != null) {
+            int progress = (Integer) event.getNewValue();
+            taskMonitor.setProgress(progress);
+
+            String message = String.format(language.getString("export.maps.progress.note"), progress,
+                    exportTask.getSlices().length);
+            taskMonitor.setNote(message);
+
+            if (exportTask.isDone()) {
+                endExportTask();
+            }
+
+            if (taskMonitor.isCanceled() && !exportTask.isCancelled()) {
+                exportTask.cancel(true);
+            }
+        }
     }
 
     private void showMessageDialog(String messageKey, String titleKey, int type, Object...formats) {

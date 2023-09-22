@@ -7,7 +7,7 @@
     <groupId>me.letscode.minecraft.tools</groupId>
     <artifactId>image-minecraft-map-converter</artifactId>
     <name>ImageToMinecraftMapConverter</name>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
 
     <organization>
         <url>https://www.skyspline.net/</url>
@@ -89,7 +89,7 @@
                         <configuration>
                             <headerType>gui</headerType>
                             <outfile>target/ImageToMinecraftMapConverter.exe</outfile>
-                            <jar>target/${project.build.finalName}.jar</jar>
+                            <jar>target/ImageToMinecraftMapConverter-GUI-jar-with-dependencies.jar</jar>
                             <errTitle>ImageToMinecraftMapConverter</errTitle>
                             <icon>launch4j/app.ico</icon>
                             <stayAlive>true</stayAlive>
@@ -101,12 +101,12 @@
                                 <minVersion>11</minVersion>
                             </jre>
                             <versionInfo>
-                                <fileVersion>1.0.0.1</fileVersion>
-                                <txtFileVersion>1.0.0.1</txtFileVersion>
+                                <fileVersion>1.1.0.1</fileVersion>
+                                <txtFileVersion>1.1.0.1</txtFileVersion>
                                 <fileDescription>Image To Minecraft Map Converter</fileDescription>
                                 <copyright>(c) 2023 LetsCode</copyright>
-                                <productVersion>1.0.0.1</productVersion>
-                                <txtProductVersion>1.0.0.1</txtProductVersion>
+                                <productVersion>1.1.0.1</productVersion>
+                                <txtProductVersion>1.1.0.1</txtProductVersion>
                                 <productName>Image To Minecraft Map Converter</productName>
                                 <internalName>ImageToMinecraftMapConverter</internalName>
                                 <originalFilename>ImageToMinecraftMapConverter.exe</originalFilename>
