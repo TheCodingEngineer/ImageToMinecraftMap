@@ -7,7 +7,7 @@
     <groupId>me.letscode.minecraft.tools</groupId>
     <artifactId>image-minecraft-map-converter</artifactId>
     <name>ImageToMinecraftMapConverter</name>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.1.1-SNAPSHOT</version>
 
     <organization>
         <url>https://www.skyspline.net/</url>

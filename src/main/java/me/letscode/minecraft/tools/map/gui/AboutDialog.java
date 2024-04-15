@@ -11,7 +11,7 @@ public class AboutDialog extends JDialog {
 
     private static final String ABOUT_TEXT = "<html><h1>%s ImageToMinecraftMap v%s</h1><p>%s<br><br>&copy; 2021-%d %s<br>%s</p></html>";
 
-    private static final String VERSION = "1.1.0"; // TODO: get version form manifest
+    private static final String VERSION = "1.1.1"; // TODO: get version form manifest
 
     private final ResourceBundle bundle;
 
