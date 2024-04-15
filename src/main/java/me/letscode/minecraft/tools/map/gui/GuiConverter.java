@@ -9,6 +9,10 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.dnd.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
@@ -20,6 +24,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
@@ -132,7 +140,7 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
         MenuPopupBuilder.setLanguageBundle(this.language);
 
         MenuListener menuListener;
-        MenuBuilder builder = new MenuBuilder("menu.file", menuListener = (handler, item) -> {
+        var builder = new MenuBuilder("menu.file", menuListener = (handler, item) -> {
             if (item.getActionCommand() == null) {
                 return;
             }
@@ -150,18 +158,13 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
                             try {
                                 currentDirectory = imageChooser.getCurrentDirectory();
                                 File selected = imageChooser.getSelectedFile();
-                                BufferedImage image = ImageIO.read(selected);
-                                if (image == null) {
+                                if (!this.loadImageFile(selected)) {
                                     showMessageDialog("open.error.message", "open.error.title",
                                             JOptionPane.ERROR_MESSAGE);
                                 } else {
-                                    this.getDrawPanel().displayImage(image);
-                                    this.getBottomPanel().setSelectedImageFile(selected);
-
                                     handler.getByActionCommand("close").setEnabled(true);
                                     handler.getByActionCommand("export.images").setEnabled(true);
                                     handler.getByActionCommand("export.maps").setEnabled(true);
-
                                 }
                             } catch (IOException e) {
                                 showMessageDialog("open.error.message", "open.error.title",
@@ -263,20 +266,16 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
 		.addSeperator()
 		.addMenuItem("menu.file.quit", "quit");
 
-        MenuBuilder editBuilder = new MenuBuilder("menu.edit", new MenuListener() {
+        var editBuilder = new MenuBuilder("menu.edit", (handler, item) -> {
+            if (item.getActionCommand() == null) {
+                return;
+            }
 
-            @Override
-            public void clicked(MenuHandler handler, JMenuItem item) {
-                if (item.getActionCommand() == null) {
-                    return;
-                }
-
-                switch (item.getActionCommand()) {
-                    case "undo":
-                        break;
-                    case "redo":
-                        break;
-                }
+            switch (item.getActionCommand()) {
+                case "undo":
+                    break;
+                case "redo":
+                    break;
             }
         })
 		.addMenuItem("menu.edit.undo", "undo", Resources.getIconResource("undo16.png"),
@@ -284,11 +283,111 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
 		.addMenuItem("menu.edit.redo", "redo", Resources.getIconResource("redo16.png"),
 				KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK));
 
+        var infoBuilder = new MenuBuilder("menu.info", (handler, item) -> {
+            if (item.getActionCommand() == null) {
+                return;
+            }
+
+            switch (item.getActionCommand()) {
+                case "projectPage":
+                    this.openURL("https://github.com/TheCodingEngineer/ImageToMinecraftMap");
+                    break;
+                case "showAbout":
+                    AboutDialog dialog = new AboutDialog(GuiConverter.this, Resources.getIconResource("appicon.png"), this.language);
+                    dialog.showCenter();
+                    break;
+            }
+        })
+        .addMenuItem("menu.info.page", "projectPage")
+        .addSeperator()
+        .addMenuItem("menu.info.about", "showAbout");
+
         addMenu(menuBar, builder);
-        addMenu(menuBar, editBuilder);
+        // addMenu(menuBar, editBuilder);
+        addMenu(menuBar, infoBuilder);
 
         add(bottomPanel = new BottomPanel(this), BorderLayout.SOUTH);
         add(drawPanel = new DrawPanel(this), BorderLayout.CENTER);
+
+        var dropAdapter = (new DropTargetAdapter() {
+
+            @Override
+            public void dragOver(DropTargetDragEvent dtde) {
+                boolean accept = false;
+                Transferable t = dtde.getTransferable();
+                if (t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                    try {
+                        accept = true;
+                        Object data = t.getTransferData(DataFlavor.javaFileListFlavor);
+                        if (data instanceof List<?>) {
+                            for (var item : (List<?>) data) {
+                                if (!(item instanceof File)) {
+                                    accept = false;
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (UnsupportedFlavorException | IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (accept) {
+                    dtde.acceptDrag(DnDConstants.ACTION_COPY);
+                } else {
+                    dtde.rejectDrag();
+                }
+            }
+
+            @Override
+            public void drop(DropTargetDropEvent dropTargetDropEvent) {
+                Transferable t = dropTargetDropEvent.getTransferable();
+                if (t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                    dropTargetDropEvent.acceptDrop(DnDConstants.ACTION_COPY);
+                    try {
+                        java.util.List<File> paths = new ArrayList<>();
+                        Object data = t.getTransferData(DataFlavor.javaFileListFlavor);
+                        if (data instanceof List<?>) {
+                            for (var item : (List<?>) data) {
+                                if (item instanceof File) {
+                                    paths.add((File) item);
+                                }
+                            }
+                        }
+
+                        if (paths.isEmpty()) {
+                            showMessageDialog("open.error.message", "open.error.title",
+                                    JOptionPane.ERROR_MESSAGE);
+                        } else if (loadImageFile(paths.get(0))) {
+                            // TODO: set menu bar
+                        } else {
+                            showMessageDialog("open.error.message", "open.error.title",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+
+                        //JOptionPane.showMessageDialog(parent, "Files: \n" + String.join("\n", paths));
+                    } catch (UnsupportedFlavorException | IOException e) {
+                        JOptionPane.showMessageDialog(null, "An error occurred: \n"
+                                        + StringHelper.toString(e) + "\n\nPlease check your dropped file!", "Error on dropping",
+                                JOptionPane.ERROR_MESSAGE);                    }
+                } else {
+                    dropTargetDropEvent.rejectDrop();
+                }
+            }
+        });
+
+        drawPanel.setDropTarget(new DropTarget(this.drawPanel, DnDConstants.ACTION_COPY, dropAdapter, true));
+    }
+
+    private void openURL(String url) {
+        if (Desktop.isDesktopSupported()) {
+            if (Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                try {
+                    Desktop.getDesktop().browse(new URI(url));
+                } catch (IOException | URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 
     private ProgressMonitor taskMonitor;
@@ -297,6 +396,18 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
 
 
     private boolean taskEnded = false;
+
+    private boolean loadImageFile(File imageFile) throws  IOException {
+        BufferedImage image = ImageIO.read(imageFile);
+        if (image == null) {
+            return false;
+        } else {
+            this.getDrawPanel().displayImage(image);
+            this.getBottomPanel().setSelectedImageFile(imageFile);
+
+            return true;
+        }
+    }
 
     private void startExportTask(File directory, int id, MapColorPalette palette, BufferedImage[] slices) {
         if (exportTask != null && !exportTask.isDone()) {

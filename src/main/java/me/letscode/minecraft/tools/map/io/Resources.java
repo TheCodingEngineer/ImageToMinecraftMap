@@ -3,6 +3,7 @@ package me.letscode.minecraft.tools.map.io;
 import me.letscode.minecraft.tools.map.palette.MapColorPalette;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
@@ -11,6 +12,8 @@ public final class Resources {
 
     private static final String LANG_RESOURCE = "/lang/%s_%s.properties";
     private static final String ICON_RESOURCE = "/icons/%s";
+    private static final String IMG_RESOURCE = "/images/%s";
+
 
     private static final String PALETTE_RESOURCE = "/palettes/colors_%s.json";
 
@@ -29,9 +32,16 @@ public final class Resources {
         return new ImageIcon(Resources.class.getResource(String.format(ICON_RESOURCE, icon)));
     }
 
+    public static ImageIcon getImageResource(String image) {
+        return new ImageIcon(Resources.class.getResource(String.format(IMG_RESOURCE, image)));
+    }
+
     public static InputStream getLanguageResourceFile(String key, Locale locale) {
         return Resources.class.getResourceAsStream(String.format(LANG_RESOURCE, key, locale.getLanguage()));
     }
 
 
+    public static ImageIcon scale(ImageIcon imageIcon, int width, int height) {
+        return new ImageIcon(imageIcon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH));
+    }
 }
