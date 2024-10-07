@@ -3,6 +3,7 @@ package me.letscode.minecraft.tools.map.gui;
 import me.letscode.minecraft.tools.map.gui.utils.Coordinates;
 import me.letscode.minecraft.tools.map.gui.utils.MenuBuilder;
 import me.letscode.minecraft.tools.map.gui.utils.MenuPopupBuilder;
+import me.letscode.minecraft.tools.map.io.InfoMetadata;
 
 import javax.swing.*;
 import java.awt.*;
@@ -322,5 +323,9 @@ public class DrawPanel extends JPanel {
             }
         }
         return slices;
+    }
+
+    public InfoMetadata getMetadata() {
+        return new InfoMetadata(canvasCols, canvasRows, InfoMetadata.ExportFormat.COLUMN_WISE);
     }
 }

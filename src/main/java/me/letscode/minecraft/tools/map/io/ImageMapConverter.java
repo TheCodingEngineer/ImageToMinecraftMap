@@ -10,6 +10,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -21,16 +22,16 @@ public class ImageMapConverter {
 
     private static final byte DUMMY_DIMENSION_ID = 5;
 
-    private File outputFile;
+    private OutputStream outputStream;
     private BufferedImage image;
     private final MapColorPalette colorPalette;
 
     private final MinecraftVersion targetVersion;
 
-    public ImageMapConverter(BufferedImage inputImage, File outputFile,
+    public ImageMapConverter(BufferedImage inputImage, OutputStream outputStream,
                              MapColorPalette palette, MinecraftVersion target) {
         this.image = inputImage;
-        this.outputFile = outputFile;
+        this.outputStream = outputStream;
         this.colorPalette = palette;
         this.targetVersion = target;
     }
@@ -44,7 +45,7 @@ public class ImageMapConverter {
             throw new IllegalArgumentException("Image height too small (< 128)");
         }
 
-        NBTOutputStream out = new NBTOutputStream(new FileOutputStream(this.outputFile), true);
+        NBTOutputStream out = new NBTOutputStream(this.outputStream, true);
         Map<String, Tag> data = new HashMap<>();
         // set dimension to invalid id => no update process (has to be lower than 10)
         // 1.16+ new UUID format
@@ -85,6 +86,7 @@ public class ImageMapConverter {
         CompoundTag finalTag = new CompoundTag("", finalMap);
 
         out.writeTag(finalTag);
+        out.flush();
         out.close();
     }
 

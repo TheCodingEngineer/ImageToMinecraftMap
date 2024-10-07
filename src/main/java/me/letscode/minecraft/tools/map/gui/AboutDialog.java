@@ -11,8 +11,6 @@ public class AboutDialog extends JDialog {
 
     private static final String ABOUT_TEXT = "<html><h1>%s ImageToMinecraftMap v%s</h1><p>%s<br><br>&copy; 2021-%d %s<br>%s</p></html>";
 
-    private static final String VERSION = "1.1.1"; // TODO: get version form manifest
-
     private final ResourceBundle bundle;
 
     public AboutDialog(Frame frame, ImageIcon image, ResourceBundle bundle) {
@@ -24,6 +22,8 @@ public class AboutDialog extends JDialog {
 
     private void initialize(ImageIcon imageIcon) {
         this.setTitle(this.bundle.getString("dialog.about.title"));
+
+
 
         this.setPreferredSize(new Dimension(680, 360));
         this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -39,9 +39,15 @@ public class AboutDialog extends JDialog {
             this.add(imageLabel, BorderLayout.WEST);
         }
 
+        var version = this.getClass().getPackage().getImplementationVersion();
+        if (version == null) {
+            version = "DEV";
+        }
+
+
         JLabel descLabel = new JLabel(String.format(ABOUT_TEXT,
                 this.bundle.getString("dialog.about.title"),
-                VERSION,
+                version,
                 this.bundle.getString("dialog.about.description"),
                 LocalDate.now().getYear(),
                 this.bundle.getString("dialog.about.authors"),

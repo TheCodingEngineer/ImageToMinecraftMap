@@ -1,13 +1,14 @@
 package me.letscode.minecraft.tools.map.gui;
 
 import me.letscode.minecraft.tools.map.gui.utils.*;
-import me.letscode.minecraft.tools.map.io.ImageMapConverter;
+import me.letscode.minecraft.tools.map.io.InfoMetadata;
 import me.letscode.minecraft.tools.map.io.Resources;
 import me.letscode.minecraft.tools.map.palette.MapColorPalette;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -31,7 +32,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
-import java.util.concurrent.ExecutionException;
 
 public class GuiConverter extends JFrame implements PropertyChangeListener {
 
@@ -119,6 +119,12 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
         return new PropertyResourceBundle(inputStream);
     }
 
+    private void setExportEnabled(MenuHandler handler, boolean enabled) {
+        handler.getByActionCommand("export.images").setEnabled(enabled);
+        handler.getByActionCommand("export.maps").setEnabled(enabled);
+        handler.getByActionCommand("export.archive").setEnabled(enabled);
+    }
+
     private void exitProgram() {
         if (saving) {
             int returnVal = JOptionPane.showConfirmDialog(GuiConverter.this,
@@ -140,7 +146,7 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
         MenuPopupBuilder.setLanguageBundle(this.language);
 
         MenuListener menuListener;
-        var builder = new MenuBuilder("menu.file", menuListener = (handler, item) -> {
+        var fileBuilder = new MenuBuilder("menu.file", menuListener = (handler, item) -> {
             if (item.getActionCommand() == null) {
                 return;
             }
@@ -163,8 +169,7 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
                                             JOptionPane.ERROR_MESSAGE);
                                 } else {
                                     handler.getByActionCommand("close").setEnabled(true);
-                                    handler.getByActionCommand("export.images").setEnabled(true);
-                                    handler.getByActionCommand("export.maps").setEnabled(true);
+                                    setExportEnabled(handler, true);
                                 }
                             } catch (IOException e) {
                                 showMessageDialog("open.error.message", "open.error.title",
@@ -178,80 +183,17 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
                     this.getDrawPanel().removeImage();
 
                     handler.getByActionCommand("close").setEnabled(false);
-                    handler.getByActionCommand("export.images").setEnabled(false);
-                    handler.getByActionCommand("export.maps").setEnabled(false);
+                    setExportEnabled(handler, false);
+
                     break;
-                case "export.images": {
-                        JFileChooser exportChooser = new JFileChooser(currentDirectory);
-                        exportChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-                        exportChooser.setMultiSelectionEnabled(false);
-                        FileNameExtensionFilter filter = new FileNameExtensionFilter(
-                                language.getString("export.filter"), "png");
-                        exportChooser.setFileFilter(filter);
-                        exportChooser.setDialogType(JFileChooser.SAVE_DIALOG);
-
-                        int returnVal = exportChooser.showDialog(this, language.getString("export.images.title"));
-                        if (returnVal == JFileChooser.APPROVE_OPTION) {
-                            try {
-                                currentDirectory = exportChooser.getCurrentDirectory();
-                                File selected = exportChooser.getSelectedFile();
-                                String name = selected.getName();
-
-                                int dot = name.lastIndexOf('.');
-                                int id = 0;
-                                String base = (dot == -1) ? name : name.substring(0, dot);
-
-                                BufferedImage[] slices = this.getDrawPanel().sliceImages();
-                                for (BufferedImage slice : slices) {
-                                    File output = new File(selected.getParentFile(), String.format("%s_%d.png", base, id++));
-                                    ImageIO.write(slice, "png", output);
-                                }
-                                showMessageDialog("export.images.done.message",
-                                        "export.images.done.title", JOptionPane.INFORMATION_MESSAGE, id);
-                            } catch (IllegalArgumentException e) {
-                                e.printStackTrace();
-                                showMessageDialog("export.error.message.bounds", "export.error.title",
-                                        JOptionPane.ERROR_MESSAGE);
-                            } catch (IOException e) {
-                                showMessageDialog("export.error.message.io", "export.error.title",
-                                        JOptionPane.ERROR_MESSAGE, e.getLocalizedMessage());
-                            }
-                        }
-                    }
+                case "export.images":
+                    exportImages();
                     break;
-                case "export.maps": {
-                        JFileChooser exportChooser = new JFileChooser(currentDirectory);
-                        exportChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-                        exportChooser.setMultiSelectionEnabled(false);
-                        exportChooser.setDialogType(JFileChooser.SAVE_DIALOG);
-
-                        int returnVal = exportChooser.showDialog(this, language.getString("export.maps.title"));
-                        if (returnVal == JFileChooser.APPROVE_OPTION) {
-                            try {
-                                currentDirectory = exportChooser.getCurrentDirectory();
-                                File directory = exportChooser.getSelectedFile();
-
-                                String input = showInputDialog("export.input.id", 1);
-                                int id = Integer.parseInt(input);
-
-                                BufferedImage[] slices = this.getDrawPanel().sliceImages();
-
-                                MapColorPalette[] palettes = Resources.getColorPalettes();
-                                var palette = palettes[palettes.length - 1];
-
-                                startExportTask(directory, id, palette, slices);
-                            } catch (NumberFormatException e) {
-                                showMessageDialog("export.error.message.number", "export.error.title",
-                                        JOptionPane.ERROR_MESSAGE);
-                            } catch (IllegalArgumentException e) {
-                                showMessageDialog("export.error.message.bounds", "export.error.title",
-                                        JOptionPane.ERROR_MESSAGE);
-                            } catch (IOException e) {
-                                showMessageDialog("export.error.message.io", "export.error.title",
-                                        JOptionPane.ERROR_MESSAGE, e.getLocalizedMessage());
-                            }
-                        }
-                    }
+                case "export.maps":
+                    exportSingleMaps();
+                    break;
+                case "export.archive":
+                    exportArchive();
                     break;
                 case "quit":
                     exitProgram();
@@ -261,8 +203,11 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
 		.addMenuItem("menu.file.open", "open", KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK))
         .addMenuItem("menu.file.close", "close", true)
         .addMenu(new MenuBuilder("menu.file.export", menuListener)
-                .addMenuItem("menu.file.export.images", "export.images", KeyStroke.getKeyStroke(KeyEvent.VK_I, InputEvent.CTRL_DOWN_MASK), true)
-                .addMenuItem("menu.file.export.maps", "export.maps", KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK),true))
+                .addMenuItem("menu.file.export.images", "export.images", KeyStroke.getKeyStroke(KeyEvent.VK_I, InputEvent.ALT_DOWN_MASK), true)
+                .addMenuItem("menu.file.export.maps", "export.maps", KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.ALT_DOWN_MASK),true)
+                .addMenuItem("menu.file.export.archive", "export.archive", KeyStroke.getKeyStroke(KeyEvent.VK_A, InputEvent.SHIFT_DOWN_MASK |
+                        InputEvent.ALT_DOWN_MASK),true)
+        )
 		.addSeperator()
 		.addMenuItem("menu.file.quit", "quit");
 
@@ -302,7 +247,7 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
         .addSeperator()
         .addMenuItem("menu.info.about", "showAbout");
 
-        addMenu(menuBar, builder);
+        addMenu(menuBar, fileBuilder);
         // addMenu(menuBar, editBuilder);
         addMenu(menuBar, infoBuilder);
 
@@ -358,13 +303,13 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
                             showMessageDialog("open.error.message", "open.error.title",
                                     JOptionPane.ERROR_MESSAGE);
                         } else if (loadImageFile(paths.get(0))) {
-                            // TODO: set menu bar
+                            fileBuilder.getByActionCommand("close").setEnabled(true);
+                            setExportEnabled(fileBuilder, true);
                         } else {
                             showMessageDialog("open.error.message", "open.error.title",
                                     JOptionPane.ERROR_MESSAGE);
                         }
 
-                        //JOptionPane.showMessageDialog(parent, "Files: \n" + String.join("\n", paths));
                     } catch (UnsupportedFlavorException | IOException e) {
                         JOptionPane.showMessageDialog(null, "An error occurred: \n"
                                         + StringHelper.toString(e) + "\n\nPlease check your dropped file!", "Error on dropping",
@@ -376,6 +321,115 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
         });
 
         drawPanel.setDropTarget(new DropTarget(this.drawPanel, DnDConstants.ACTION_COPY, dropAdapter, true));
+    }
+
+    private void exportImages() {
+        JFileChooser exportChooser = new JFileChooser(currentDirectory);
+        exportChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        exportChooser.setMultiSelectionEnabled(false);
+        FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                language.getString("export.images.filter"), "png");
+        exportChooser.setFileFilter(filter);
+        exportChooser.setDialogType(JFileChooser.SAVE_DIALOG);
+
+        int returnVal = exportChooser.showDialog(this, language.getString("export.images.title"));
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            try {
+                currentDirectory = exportChooser.getCurrentDirectory();
+                File selected = exportChooser.getSelectedFile();
+                String name = selected.getName();
+
+                int dot = name.lastIndexOf('.');
+                int id = 0;
+                String base = (dot == -1) ? name : name.substring(0, dot);
+
+                BufferedImage[] slices = this.getDrawPanel().sliceImages();
+                for (BufferedImage slice : slices) {
+                    File output = new File(selected.getParentFile(), String.format("%s_%d.png", base, id++));
+                    ImageIO.write(slice, "png", output);
+                }
+                showMessageDialog("export.images.done.message",
+                        "export.images.done.title", JOptionPane.INFORMATION_MESSAGE, id);
+            } catch (IllegalArgumentException e) {
+                showMessageDialog("export.error.message.bounds", "export.error.title",
+                        JOptionPane.ERROR_MESSAGE);
+            } catch (IOException e) {
+                showMessageDialog("export.error.message.io", "export.error.title",
+                        JOptionPane.ERROR_MESSAGE, e.getLocalizedMessage());
+            }
+        }
+    }
+
+    private void exportArchive() {
+        JFileChooser exportChooser = new JFileChooser(currentDirectory);
+        exportChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        exportChooser.setMultiSelectionEnabled(false);
+        FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                language.getString("export.archive.filter"), "zip");
+        exportChooser.setFileFilter(filter);
+        exportChooser.setDialogType(JFileChooser.SAVE_DIALOG);
+
+        int returnVal = exportChooser.showDialog(this, language.getString("export.archive.title"));
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            try {
+                currentDirectory = exportChooser.getCurrentDirectory();
+                File selected = exportChooser.getSelectedFile();
+
+                int result = showOptionDialog("export.archive.question.metadata", "export.archive.question.title",
+                        JOptionPane.YES_NO_OPTION);
+
+                InfoMetadata metadata = null;
+                if (result == JOptionPane.YES_OPTION) {
+                    metadata = this.getDrawPanel().getMetadata();
+                }
+
+                BufferedImage[] slices = this.getDrawPanel().sliceImages();
+                MapColorPalette[] palettes = Resources.getColorPalettes();
+                var palette = palettes[palettes.length - 1];
+
+                startArchiveExportTask(selected, metadata, palette, slices);
+            } catch (IllegalArgumentException e) {
+                showMessageDialog("export.error.message.bounds", "export.error.title",
+                        JOptionPane.ERROR_MESSAGE);
+            } catch (IOException e) {
+                showMessageDialog("export.error.message.io", "export.error.title",
+                        JOptionPane.ERROR_MESSAGE, e.getLocalizedMessage());
+            }
+        }
+    }
+
+    private void exportSingleMaps() {
+        JFileChooser exportChooser = new JFileChooser(currentDirectory);
+        exportChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        exportChooser.setMultiSelectionEnabled(false);
+        exportChooser.setDialogType(JFileChooser.SAVE_DIALOG);
+
+        int returnVal = exportChooser.showDialog(this, language.getString("export.maps.title"));
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            try {
+                currentDirectory = exportChooser.getCurrentDirectory();
+                File directory = exportChooser.getSelectedFile();
+
+                String input = showInputDialog("export.input.id", 1);
+                int id = Integer.parseInt(input);
+
+                BufferedImage[] slices = this.getDrawPanel().sliceImages();
+
+                MapColorPalette[] palettes = Resources.getColorPalettes();
+                var palette = palettes[palettes.length - 1];
+
+                startExportTask(directory, id, palette, slices);
+            } catch (NumberFormatException e) {
+                showMessageDialog("export.error.message.number", "export.error.title",
+                        JOptionPane.ERROR_MESSAGE);
+            } catch (IllegalArgumentException e) {
+                showMessageDialog("export.error.message.bounds", "export.error.title",
+                        JOptionPane.ERROR_MESSAGE);
+            } catch (IOException e) {
+                showMessageDialog("export.error.message.io", "export.error.title",
+                        JOptionPane.ERROR_MESSAGE, e.getLocalizedMessage());
+            }
+        }
     }
 
     private void openURL(String url) {
@@ -417,10 +471,24 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
         taskMonitor = new ProgressMonitor(this,  language.getString("export.maps.progress.title"),
                 "", 0, slices.length);
 
-        exportTask = new ExportWorker(this, directory, id, palette, slices);
+        exportTask = new ExportWorker(this, directory, id, palette, slices, false, null);
         exportTask.addPropertyChangeListener(this);
         exportTask.execute();
     }
+
+    private void startArchiveExportTask(File archiveFile, InfoMetadata metadata, MapColorPalette palette, BufferedImage[] slices) {
+        if (exportTask != null && !exportTask.isDone()) {
+            return;
+        }
+        taskEnded = false;
+        taskMonitor = new ProgressMonitor(this,  language.getString("export.maps.progress.title"),
+                "", 0, slices.length);
+
+        exportTask = new ExportWorker(this, archiveFile, 1, palette, slices, true, metadata);
+        exportTask.addPropertyChangeListener(this);
+        exportTask.execute();
+    }
+
 
 
     private void endExportTask()  {
@@ -463,6 +531,20 @@ public class GuiConverter extends JFrame implements PropertyChangeListener {
     	JOptionPane.showMessageDialog(this, String.format(this.language.getString(messageKey), formats),
 				this.language.getString(titleKey), type);
 	}
+
+    private int showOptionDialog(String messageKey, String titleKey, int optionType, Object...formats) {
+        return JOptionPane.showOptionDialog(this,
+                String.format(this.language.getString(messageKey), formats),
+                this.language.getString(titleKey),
+                optionType,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                null,
+                null);
+
+
+    }
+
 
     private String showInputDialog(String messageKey, Object initialValue) {
         return JOptionPane.showInputDialog(this, this.language.getString(messageKey), initialValue);

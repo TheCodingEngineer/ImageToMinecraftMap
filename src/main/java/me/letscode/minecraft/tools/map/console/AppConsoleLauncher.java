@@ -6,6 +6,7 @@ import me.letscode.minecraft.tools.map.palette.MinecraftVersion;
 
 import javax.imageio.ImageIO;
 import java.io.File;
+import java.io.FileOutputStream;
 
 public class AppConsoleLauncher {
 
@@ -38,7 +39,7 @@ public class AppConsoleLauncher {
             var image = ImageIO.read(inputImage);
             var colorPalette = ColorPaletteParser.parseColorPalette(paletteInStream);
 
-            var converter = new ImageMapConverter(image, outputData, colorPalette, target);
+            var converter = new ImageMapConverter(image, new FileOutputStream(outputData), colorPalette, target);
             converter.convert();
 
             long end = System.currentTimeMillis();
