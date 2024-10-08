@@ -13,13 +13,23 @@ This tool uses `Launch4j` to pack the application into a self executable binary 
 
 [Website](http://launch4j.sourceforge.net/)
 
-## TODO
 
-- [x] Move color palette definition to files
+## Building
+
+Requires Apache Maven 3.6 or later and Java 11 or later. Build using the following command: 
+
+```bash
+$ mvn clean package
+```
+
+Output directory of binaries is `target`. CLI und GUI versions are currently different JAR files (because different Main Class).
+The Windows Executable only include the GUI version.
+
+## ToDo
+
 - [ ] Support multiple minecraft versions
 - [ ] Extend imag editor features: Scaling, Resizing, Transformations
 - [ ] Implement action history (undo, redo)
-
 
 ## License
 

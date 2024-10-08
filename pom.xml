@@ -7,7 +7,7 @@
     <groupId>me.letscode.minecraft.tools</groupId>
     <artifactId>image-minecraft-map-converter</artifactId>
     <name>ImageToMinecraftMapConverter</name>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.2.0</version>
 
     <organization>
         <url>https://www.skyspline.net/</url>
@@ -18,6 +18,7 @@
     <description>Convert images to minecraft maps</description>
 
     <properties>
+        <exeVersion>0.1.2.0</exeVersion>
         <maven.compiler.release>11</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -35,7 +36,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.6.0</version>
+                <version>3.7.1</version>
                 <executions>
                     <execution>
                         <id>cli</id>
@@ -84,7 +85,7 @@
             <plugin>
                 <groupId>com.akathist.maven.plugins.launch4j</groupId>
                 <artifactId>launch4j-maven-plugin</artifactId>
-                <version>2.3.3</version>
+                <version>2.5.2</version>
                 <executions>
                     <execution>
                         <id>l4j-gui</id>
@@ -107,12 +108,12 @@
                                 <minVersion>11</minVersion>
                             </jre>
                             <versionInfo>
-                                <fileVersion>1.1.0.1</fileVersion>
-                                <txtFileVersion>1.1.0.1</txtFileVersion>
+                                <fileVersion>${exeVersion}</fileVersion>
+                                <txtFileVersion>${exeVersion}</txtFileVersion>
                                 <fileDescription>Image To Minecraft Map Converter</fileDescription>
-                                <copyright>(c) 2023 LetsCode</copyright>
-                                <productVersion>1.1.0.1</productVersion>
-                                <txtProductVersion>1.1.0.1</txtProductVersion>
+                                <copyright>(c) 2024 LetsCode</copyright>
+                                <productVersion>${exeVersion}</productVersion>
+                                <txtProductVersion>${exeVersion}</txtProductVersion>
                                 <productName>Image To Minecraft Map Converter</productName>
                                 <internalName>ImageToMinecraftMapConverter</internalName>
                                 <originalFilename>ImageToMinecraftMapConverter.exe</originalFilename>

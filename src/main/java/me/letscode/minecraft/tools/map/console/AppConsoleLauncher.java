@@ -13,6 +13,7 @@ public class AppConsoleLauncher {
     public static void main(String[] args) {
         if (args.length < 2 || args.length > 3) {
             System.out.println("Syntax: image2map <Input Image> <Output File> [Target Version]");
+            System.exit(1);
             return;
         }
 
@@ -22,7 +23,8 @@ public class AppConsoleLauncher {
         MinecraftVersion target = new MinecraftVersion("1.17", 2724);
 
         if (!inputImage.exists()) {
-            System.out.println("Input file doesn't exists");
+            System.err.println("Input file doesn't exists");
+            System.exit(-1);
             return;
         }
 
@@ -43,9 +45,10 @@ public class AppConsoleLauncher {
             converter.convert();
 
             long end = System.currentTimeMillis();
-            System.out.println("Done in " + (end - start) + " ms. Converted to ");
+            System.out.println("Done in " + (end - start) + " ms. Converted to " + outputData.getAbsolutePath());
         } catch (Exception e) {
-            System.out.println("Error occurred while converting image to NBT-Map: " + e.getMessage());
+            System.out.println("Error occurred while converting image to NBT data: " + e.getMessage());
+            System.exit(-1);
         }
 
     }
